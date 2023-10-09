@@ -25,6 +25,7 @@ app.use("/uploads", express.static("uploads"));
 
 app.use(require('./routes/auth'))
 app.use(require('./routes/pin'))
+app.use(require('./routes/category'))
 
 app.get("/", (req, res) => {
     res.send("Welcome our Pinin...");

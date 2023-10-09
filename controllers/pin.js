@@ -16,31 +16,14 @@ function generateRandomPIN() {
   exports.createPin = async (req, res) => {
     try {
       const {  latitude, longitude } = req.body;
-// Set the expireToken field to 30 minutes from now
-newPin.expireToken = new Date(Date.now() + 30 * 60 * 1000);
 
-// Save the newPin
-newPin.save().then((result) => {
-  console.log('Token will expire in 30 minutes:', result);
+const newPin = new Pin({
+  pin:generateRandomPIN(),
+  latitude,
+  longitude,
+  expireToken:new Date(Date.now() + customMinutes * 60 * 1000) 
 });
-
-// Set the expireToken field to 1 hour from now
-newPin.expireToken = new Date(Date.now() + 60 * 60 * 1000);
-
-// Save the newPin again
-newPin.save().then((result) => {
-  console.log('Token will expire in 1 hour:', result);
-});
-
-// Set the expireToken field to 3 hours from now
-newPin.expireToken = new Date(Date.now() + 3 * 60 * 60 * 1000);
-
-      const newPin = new Pin({
-        pin:generateRandomPIN(),
-        latitude,
-        longitude,
-      });
-      const savedPin = await newPin.save();
+const savedPin = await newPin.save();
       res.status(201).json(savedPin);
     } catch (error) {
       res.status(500).json({ error: 'Error creating pin' });
@@ -58,11 +41,11 @@ newPin.expireToken = new Date(Date.now() + 3 * 60 * 60 * 1000);
   };
   
   // Get a single pin by ID
-  exports.getPinById = async (req, res) => {
+  exports.getPinByPin = async (req, res) => {
     try {
-      const pin = await Pin.findById(req.params.id);
+      const pin = await Pin.findOne({pin:req.params.pin,expireToken:{$gt:Date.now()}});
       if (!pin) {
-        return res.status(404).json({ error: 'Pin not found' });
+        return res.status(404).json({ error: 'Pin not found or Expired' });
       }
       res.status(200).json(pin);
     } catch (error) {
@@ -73,7 +56,13 @@ newPin.expireToken = new Date(Date.now() + 3 * 60 * 60 * 1000);
   // Update a pin by ID
   exports.updatePin = async (req, res) => {
     try {
-      const updatedPin = await Pin.findByIdAndUpdate(req.params.id, req.body, {
+      const {latitude,longitude,customMinutes} = req.body;
+      const updatedPin = await Pin.findOneAndUpdate({pin:req.params.pin},{
+        pin:generateRandomPIN(),
+        latitude,
+        longitude,
+        expireToken:new Date(Date.now() + customMinutes * 60 * 1000) 
+      }, {
         new: true,
       });
       if (!updatedPin) {
@@ -88,7 +77,7 @@ newPin.expireToken = new Date(Date.now() + 3 * 60 * 60 * 1000);
   // Delete a pin by ID
   exports.deletePin = async (req, res) => {
     try {
-      const deletedPin = await Pin.findByIdAndRemove(req.params.id);
+      const deletedPin = await Pin.findOneAndRemove({pin:req.params.pin});
       if (!deletedPin) {
         return res.status(404).json({ error: 'Pin not found' });
       }
